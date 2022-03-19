@@ -2,6 +2,7 @@ import hashlib
 import re
 import struct
 import base58check
+import binascii
 
 def countLeadingChars(s, ch):
     count = 0
@@ -14,7 +15,7 @@ def countLeadingChars(s, ch):
 
 # refer to this https://en.bitcoin.it/wiki/Base58Check_encoding
 def base58CheckEncode(version, payload):
-    s = (version + payload).encode('utf-8') if version != hex(0) else payload.encode('utf-8')
+    s = bytes.fromhex(version[2:] + payload) if version != hex(0) else bytes.fromhex(payload)
     checksum = hashlib.sha256(hashlib.sha256(s).digest()).digest()[0:4]
     result = (s + checksum)
     leadingZeros = countLeadingChars(result, 0)
@@ -29,7 +30,7 @@ def base58CheckDecode(s):
     checksum = hashlib.sha256(hashlib.sha256(result).digest()).digest()[0:4]
     assert(chk == checksum)
     version = result[0]
-    return (result[1:]).decode('utf-8')
+    return hex(int.from_bytes(result[1:], byteorder='big'))[2:]
 
 
 
