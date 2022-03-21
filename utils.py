@@ -3,7 +3,9 @@ import re
 import struct
 import base58check
 import binascii
+import ecdsa
 
+# counting leading characters
 def countLeadingChars(s, ch):
     count = 0
     for c in s:
@@ -15,27 +17,19 @@ def countLeadingChars(s, ch):
 
 # refer to this https://en.bitcoin.it/wiki/Base58Check_encoding
 def base58CheckEncode(version, payload):
-    s = bytes.fromhex(version[2:] + payload) if version != hex(0) else bytes.fromhex(payload)
+    s = bytes.fromhex(version[2:] + payload)
     checksum = hashlib.sha256(hashlib.sha256(s).digest()).digest()[0:4]
     result = (s + checksum)
-    leadingZeros = countLeadingChars(result, 0)
-    return '1' * leadingZeros +  base58check.b58encode(result).decode('utf-8')
+    return base58check.b58encode(result).decode('utf-8')
 
 # reverse of the base58CheckEncode
 def base58CheckDecode(s):
-    leadingOnes = countLeadingChars(s, '1')
     s = base58check.b58decode(s)
-    result = b'0' * leadingOnes + s[:-4]
     chk = s[-4:]
-    checksum = hashlib.sha256(hashlib.sha256(result).digest()).digest()[0:4]
+    checksum = hashlib.sha256(hashlib.sha256(s[:-4]).digest()).digest()[0:4]
     assert(chk == checksum)
-    version = result[0]
-    return hex(int.from_bytes(result[1:], byteorder='big'))[2:]
+    return hex(int.from_bytes(s[:-4], byteorder='big'))[2:]
 
-
-
-
-############################################################################
 
 # Returns byte string value, not hex string
 def varint(n):
@@ -51,6 +45,18 @@ def varint(n):
 # Takes and returns byte string value, not hex string
 def varstr(s):
     return varint(len(s)) + s
+
+# convert DER signature to hex signature 
+def derSigToHexSig(s):
+    s, junk = ecdsa.der.remove_sequence(binascii.unhexlify(s))
+    if junk != b'':
+        print ('JUNK' )
+    assert(junk == b'')
+    x, s = ecdsa.der.remove_integer(s)
+    y, s = ecdsa.der.remove_integer(s)
+    return '%064x%064x' % (x, y)
+
+############################################################################
 
 # 60002
 def netaddr(ipaddr, port):
@@ -81,51 +87,3 @@ def processAddr(payload):
     return '%d.%d.%d.%d:%d' % (ord(payload[20]), ord(payload[21]),
                                ord(payload[22]), ord(payload[23]),
                                struct.unpack('!H', payload[24:26])[0])
-
-
-def base58encode(n):
-    result = ''
-    while n > 0:
-        result = b58[n % 58] + result
-        n /= 58
-    return result
-
-
-def base58decode(s):
-    result = 0
-    for i in range(0, len(s)):
-        result = result * 58 + b58.index(s[i])
-    return result
-
-
-def base256encode(n):
-    result = ''
-    while n > 0:
-        result = chr(n % 256) + result
-        n /= 256
-    return result
-
-
-def base256decode(s):
-    result = 0
-    for c in s:
-        result = result * 256 + ord(c)
-    return result
-
-
-# def countLeadingChars(s, ch):
-#     count = 0
-#     for c in s:
-#         if c == ch:
-#             count += 1
-#         else:
-#             break
-#     return count
-
-# https://en.bitcoin.it/wiki/Base58Check_encoding
-# def base58CheckEncode(version, payload):
-#     s = (chr(version) + payload).encode('unicode_escape')
-#     checksum = hashlib.sha256(hashlib.sha256(s).digest()).digest()[0:4]
-#     result = (s + checksum).decode('unicode_escape')
-#     leadingZeros = countLeadingChars(result, '\0')
-#     return '1' * leadingZeros + base58encode(base256decode(result))
