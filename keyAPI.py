@@ -3,6 +3,7 @@ import ecdsa.der
 import ecdsa.util
 import hashlib
 import binascii
+import random
 
 import utils
 
@@ -34,24 +35,12 @@ def addrToScriptPubKey(b58str):
 
 #--------------------------------------------------------------------
 # Example
-# private_key = 'ed17812c041ba14ba6cc6e3a1d6e6df50129643109dca5c63fb3ba12a95fcfe3'
-# wif = privateKeyToWif(private_key)
-# ptest = wifToPrivateKey(wif)
-# public_key = privateKeyToPublicKey(private_key)
-# address = publicKeyToAddr(public_key)
-# scriptPubKey = addrToScriptPubKey(address)
-# print(scriptPubKey)
+print(hex(random.getrandbits(256)))
+private_key = 'ed17812c041ba14ba6cc6e3a1d6e6df50129643109dca5c63fb3ba12a95fcfe3'
+wif = privateKeyToWif(private_key)
+ptest = wifToPrivateKey(wif)
+public_key = privateKeyToPublicKey(private_key)
+address = publicKeyToAddr(public_key)
+scriptPubKey = addrToScriptPubKey(address)
+print(scriptPubKey)
 
-
-# Test
-# testpk = "f19c523315891e6e15ae0608a35eec2e00ebd6d1984cf167f46336dabd9b2de4"
-# twif = privateKeyToWif(testpk)
-# ttpk = wifToPrivateKey(twif)
-# tpk = privateKeyToPublicKey(testpk)
-# taddress = publicKeyToAddr(tpk)
-# tspk = addrToScriptPubKey(taddress)
-
-# print(twif)
-# print(tpk)
-# print(ttpk)
-# print(taddress)
