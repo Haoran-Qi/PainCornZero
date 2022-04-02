@@ -44,6 +44,35 @@ def transactionHexToHash(txn):
 def stringToHashString(s):
     return binascii.hexlify(hashlib.sha256(s.encode('ascii')).digest()).decode('ascii')
 
+def txnStringsToRootHashString(txnStrings):
+    if len(txnStrings) == 0:
+        print("cannot get roothash for empty txn arrays")
+        return False
+    txnsHashBytes = [hashlib.sha256(binascii.unhexlify(txnStr)).digest() for txnStr in txnStrings]
+    txnStrings = None
+    tempArray = []
+    while len(txnsHashBytes) > 1:
+        index = 0
+        while index < len(txnsHashBytes):
+            # if the node is last one
+            if index == len(txnsHashBytes)-1:
+                tempArray.append(hashlib.sha256(txnsHashBytes[index]).digest())
+            else:
+                leftNode = txnsHashBytes[index]
+                rightNode = txnsHashBytes[index + 1]
+                appendedNode = None
+                # sort nodes
+                if leftNode <= rightNode:
+                    appendedNode = leftNode + rightNode
+                else:
+                    appendedNode = rightNode + leftNode
+                tempArray.append(hashlib.sha256(appendedNode).digest())
+            index += 2
+        txnsHashBytes = tempArray
+        tempArray = []
+    return binascii.hexlify(txnsHashBytes[0]).decode('utf-8')
+
+
 #--------------------------------------------------------------------
 # Example
 print(hex(random.getrandbits(256)))
