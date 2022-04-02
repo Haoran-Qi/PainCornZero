@@ -57,5 +57,9 @@ class Server:
 
 
 if __name__ == '__main__':
-    myServer = Server("127.0.0.1:3000",["127.0.0.1:3001", "127.0.0.1:3002"], None)
-    myServer.run()
+    # myServer = Server("127.0.0.1:3000",["127.0.0.1:3001", "127.0.0.1:3002"], None)
+    # myServer.run()
+
+    
+    myStorage =  Storage()
+    print(myStorage.states)

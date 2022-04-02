@@ -68,7 +68,7 @@ class Storage:
         }]
     }
     """
-    def __init__(self, blocks):
+    def __init__(self, blocks=None):
         self.waitingTransactions = []
         self.states = []
         self.transactionMap = {}  # {hash: stateIndex}
@@ -77,11 +77,6 @@ class Storage:
             blocks = json.load(f)
             self.traverseBlocks(blocks)
 
-    def calculateStates(self):
-        for block in self.blocks:
-            if not self.verifyBlock(block):
-                return False
-
     def traverseBlocks(self, blocks):
         newStates = {}
         newTransactionMap = {}
@@ -89,22 +84,22 @@ class Storage:
         for i in range(len(blocks)):
             block = blocks[i]
             # verify block
-            if not self.verifyBlock(block, i, preHeaderHash):
+            if not self.verifyBlock(block, preHeaderHash):
                 return False
             # update each transaction
-            for j in range(len(block.body.transactions)):
-                txn = block.body.transactions[j]
+            for j in range(len(block["body"]["transactions"])):
+                txn = block["body"]["transactions"][j]
                 txnHash = keyAPI.transactionHexToHash(txn)
                 txnJson = transactionAPI.parseJson(txn)
                 newTransactionMap[txnHash] = txnJson
                 publicKey = txnJson["publicKey"]
-                keyAPI.verifyTxnSignature(txn)  # make sure the public key, content, and signature match
+                transactionAPI.verifyTxnSignature(txn)  # make sure the public key, content, and signature match
 
                 # process outputs
                 totalOutputAmount = 0
                 for [amount, publicScript] in txnJson['output']:
                     receiverAddress = keyAPI.scriptPubKeyToAddress(publicScript)
-                    if not newStates[receiverAddress]:
+                    if receiverAddress not in newStates:
                         newStates[receiverAddress] = []
                     newStates[receiverAddress].append({
                         "transactionId": txnHash,
@@ -115,23 +110,24 @@ class Storage:
                     totalOutputAmount += int(amount)
 
                 # ignore input if genesis block
-                if j == 0:
+                if i == 0:
                     continue
                 # process input
                 totalInputAmount = 0
                 inputTxnHash = txnJson["prevHash"]
                 sourceIndex = int(txnJson["sourceIdx"])   #vout
                 # trace back to previous transactions
-                inputTxnJson = newTransactionMap[inputTxnHash]
-                if not inputTxnJson:
-                    print("Input transaction not found "+ inputTxnHash + " for block height "+ i)
+                if inputTxnHash not in newTransactionMap:
+                    print("Input transaction not found "+ inputTxnHash + " for block height "+ str(i))
                     return False
+                inputTxnJson = newTransactionMap[inputTxnHash]
                 # get the nth output in one of previous transactions
                 [amount, publicScript] = inputTxnJson['output'][sourceIndex]
                 receiverAddress = keyAPI.scriptPubKeyToAddress(publicScript)
                 if receiverAddress != keyAPI.publicKeyToAddr(publicKey):
                     print("Receiver address mismatch")
-                # update state
+                    return False
+                # update state utxo to spent
                 for utxo in newStates[receiverAddress]:
                     if utxo["transactionId"] != inputTxnHash or utxo["vout"] != sourceIndex:
                         continue
@@ -150,15 +146,14 @@ class Storage:
                 
 
                 
-            header = json.dumps(block.header) 
-            preHeaderHash = hashlib.sha256(header)
+            header = json.dumps(block['header']) 
+            preHeaderHash = keyAPI.stringToHashString(header)
         # update blocks 
         self.blocks = blocks
         self.states = newStates
         self.transactionMap = newTransactionMap
         return True
             
-
         
     def verifyBlock(block, index, preHeaderHash):
         return True

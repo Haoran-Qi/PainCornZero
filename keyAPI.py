@@ -41,6 +41,9 @@ def transactionHexToHash(txn):
     hashBytes = hashlib.sha256(txnBytes).digest()
     return binascii.hexlify(hashBytes).decode('ascii')
 
+def stringToHashString(s):
+    return binascii.hexlify(hashlib.sha256(s.encode('ascii')).digest()).decode('ascii')
+
 #--------------------------------------------------------------------
 # Example
 print(hex(random.getrandbits(256)))
