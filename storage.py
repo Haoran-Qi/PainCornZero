@@ -1,7 +1,6 @@
 import json
 import keyAPI
 import transactionAPI
-import hashlib
 
 
 class Storage:
@@ -70,7 +69,7 @@ class Storage:
     """
     def __init__(self, blocks=None):
         self.waitingTransactions = []
-        self.states = []
+        self.states = {}  # utxos
         self.transactionMap = {}  # {hash: stateIndex}
         if not blocks or not self.traverseBlocks(blocks):
             f = open('initBlocks.json')
@@ -80,92 +79,128 @@ class Storage:
     def traverseBlocks(self, blocks):
         newStates = {}
         newTransactionMap = {}
-        preHeaderHash = ""
         for i in range(len(blocks)):
             block = blocks[i]
-            # verify block
-            if not self.verifyBlock(block, preHeaderHash):
+            if not self.applyBlockToState(block, blocks, newStates, newTransactionMap):
                 return False
-            # update each transaction
-            for j in range(len(block["body"]["transactions"])):
-                txn = block["body"]["transactions"][j]
-                txnHash = keyAPI.transactionHexToHash(txn)
-                txnJson = transactionAPI.parseJson(txn)
-                newTransactionMap[txnHash] = txnJson
-                publicKey = txnJson["publicKey"]
-                transactionAPI.verifyTxnSignature(txn)  # make sure the public key, content, and signature match
-
-                # process outputs
-                totalOutputAmount = 0
-                for [amount, publicScript] in txnJson['output']:
-                    receiverAddress = keyAPI.scriptPubKeyToAddress(publicScript)
-                    if receiverAddress not in newStates:
-                        newStates[receiverAddress] = []
-                    newStates[receiverAddress].append({
-                        "transactionId": txnHash,
-                        "vout": 0,
-                        "value" : int(amount),
-                        "spent": False
-                    })
-                    totalOutputAmount += int(amount)
-
-                # ignore input if genesis block
-                if i == 0:
-                    continue
-                # process input
-                totalInputAmount = 0
-                inputTxnHash = txnJson["prevHash"]
-                sourceIndex = int(txnJson["sourceIdx"])   #vout
-                # trace back to previous transactions
-                if inputTxnHash not in newTransactionMap:
-                    print("Input transaction not found "+ inputTxnHash + " for block height "+ str(i))
-                    return False
-                inputTxnJson = newTransactionMap[inputTxnHash]
-                # get the nth output in one of previous transactions
-                [amount, publicScript] = inputTxnJson['output'][sourceIndex]
-                receiverAddress = keyAPI.scriptPubKeyToAddress(publicScript)
-                if receiverAddress != keyAPI.publicKeyToAddr(publicKey):
-                    print("Receiver address mismatch")
-                    return False
-                # update state utxo to spent
-                for utxo in newStates[receiverAddress]:
-                    if utxo["transactionId"] != inputTxnHash or utxo["vout"] != sourceIndex:
-                        continue
-                    # found the output
-                    if utxo["spent"] == True:
-                        print("utxo already spent "+ utxo)
-                        return False
-                    totalInputAmount += utxo["value"]
-                    utxo["spent"] = True
-                if totalInputAmount != totalOutputAmount:
-                    print("total input not equal to output amount "+ inputTxnHash)
-                    print("total income "+totalInputAmount)
-                    print("total outcome "+totalOutputAmount)
-                    print(inputTxnJson)
-                    return False
-                
-
-                
-            header = json.dumps(block['header']) 
-            preHeaderHash = keyAPI.stringToHashString(header)
+        
         # update blocks 
         self.blocks = blocks
         self.states = newStates
         self.transactionMap = newTransactionMap
         return True
-            
+
+
+    # @sideeffect: update newStates and newTransactionMap
+    def applyBlockToState(self, block, blocks, newStates, newTransactionMap):
+        preHeaderHash = None
+        i = block['header']['height']
+        if i > 0:
+            preHeader = json.dumps(blocks[i-1]['header'])
+            preHeaderHash = keyAPI.stringToHashString(preHeader)
+        # verify block
+        if not self.verifyBlock(block):
+            return False
+        if i>0 and block['preHeaderHash'] != preHeaderHash:
+            print("block "+str(i)+ " preHeaderHash mismatch")
+            return False
+        # update each transaction
+        for j in range(len(block["body"]["transactions"])):
+            txn = block["body"]["transactions"][j]
+            txnHash = keyAPI.transactionHexToHash(txn)
+            txnJson = transactionAPI.parseJson(txn)
+            newTransactionMap[txnHash] = txnJson
+            publicKey = txnJson["publicKey"]
+            transactionAPI.verifyTxnSignature(txn)  # make sure the public key, content, and signature match
+
+            # process outputs
+            totalOutputAmount = 0
+            for [amount, publicScript] in txnJson['output']:
+                receiverAddress = keyAPI.scriptPubKeyToAddress(publicScript)
+                if receiverAddress not in newStates:
+                    newStates[receiverAddress] = []
+                newStates[receiverAddress].append({
+                    "transactionId": txnHash,
+                    "vout": 0,
+                    "value" : int(amount),
+                    "spent": False
+                })
+                totalOutputAmount += int(amount)
+
+            # ignore input if genesis block
+            if i == 0:
+                continue
+            # process input
+            totalInputAmount = 0
+            inputTxnHash = txnJson["prevHash"]
+            sourceIndex = int(txnJson["sourceIdx"])   #vout
+            # trace back to previous transactions
+            if inputTxnHash not in newTransactionMap:
+                print("Input transaction not found "+ inputTxnHash + " for block height "+ str(i))
+                return False
+            inputTxnJson = newTransactionMap[inputTxnHash]
+            # get the nth output in one of previous transactions
+            [amount, publicScript] = inputTxnJson['output'][sourceIndex]
+            receiverAddress = keyAPI.scriptPubKeyToAddress(publicScript)
+            if receiverAddress != keyAPI.publicKeyToAddr(publicKey):
+                print("Receiver address mismatch")
+                return False
+            # update state utxo to spent
+            for utxo in newStates[receiverAddress]:
+                if utxo["transactionId"] != inputTxnHash or utxo["vout"] != sourceIndex:
+                    continue
+                # found the output
+                if utxo["spent"] == True:
+                    print("utxo already spent "+ utxo)
+                    return False
+                totalInputAmount += utxo["value"]
+                utxo["spent"] = True
+            if totalInputAmount != totalOutputAmount:
+                print("total input not equal to output amount "+ inputTxnHash)
+                print("total income "+totalInputAmount)
+                print("total outcome "+totalOutputAmount)
+                print(inputTxnJson)
+                return False
+        return True
         
-    def verifyBlock(block, index, preHeaderHash):
+    def verifyBlock(self, block):
+        # check markle tree
+        # check nonce with current target
+        # check total inputs and total outputs  
         return True
 
     def getFullBlocks(self):
         return json.dumps(self.blocks)
 
+    def getUtxosForAddress(self, address):
+        if address not in self.states:
+            return []
+        return json.dumps(self.states[address])
+
 
     def addWaitingTransaction(self, transaction):
         self.waitingTransactions.append(transaction)
 
-        
+    def addNewBlock(self, block):
+        # verify block
+        if not self.verifyBlock(block):
+            print("new block not valid")
+            return False
+        if block["header"]["height"] != len(self.blocks):
+            print("new block not on top")
+            return False
+        # deep clone states
+        newStates =  json.loads(json.dumps(self.states))
+        # deep clone transactionMap
+        newTransactionMap = json.loads(json.dumps(self.transactionMap))
+        if not self.applyBlockToState(block, self.blocks, newStates, newTransactionMap):
+            return False
+        # update real states and blocks
+        self.states = newStates
+        self.transactionMap = newTransactionMap
+        self.blocks.append(block)
+        return True
+    
 
     
 
