@@ -1,0 +1,19 @@
+[
+    {
+        "id": "asdqwasofioie",
+        "input": [
+        ],
+        "outputs": [
+            {
+                "address": "addressA",
+                "value" : 10
+            },
+            {
+                "address": "addressB",
+                "value": 5
+            }
+        ],
+        "signatures": [
+        ]
+    }
+]

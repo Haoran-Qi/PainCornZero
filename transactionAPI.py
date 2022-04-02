@@ -102,6 +102,7 @@ public_key = keyAPI.privateKeyToPublicKey(private_key)
 address = keyAPI.publicKeyToAddr(public_key)
 scriptPubKey = keyAPI.addrToScriptPubKey(address)
 
+
 # sender
 prevHash = "81b4c832d70cb56ff957589752eb4125a4cab78a25a8fc52d6a09e5bd4404d48"
 senderAddress = "1MMMMSUb1piy2ufrSguNUdFmAcvqrQF8M5"
@@ -111,10 +112,21 @@ sprivatekey = keyAPI.wifToPrivateKey(senderWif)
 spublick = keyAPI.privateKeyToPublicKey(sprivatekey)
 
 # make transaction
-txn = makeSignedTransaction(sprivatekey, prevHash, 0, keyAPI.addrToScriptPubKey(senderAddress), [[91234, keyAPI.addrToScriptPubKey(address)]])
+txn = makeSignedTransaction(sprivatekey, prevHash, 0, keyAPI.addrToScriptPubKey(senderAddress), [[50000000, keyAPI.addrToScriptPubKey(address)]])
 
 # verrify transaction
 verifyTxnSignature(txn)
+print("to receiver")
+print(txn)
+
 
 # parse transaction
 parsed = parseJson(txn)
+print(parsed)
+print(address)
+print(keyAPI.scriptPubKeyToAddress(keyAPI.addrToScriptPubKey(address)))
+
+
+txn = makeSignedTransaction(sprivatekey, prevHash, 0, keyAPI.addrToScriptPubKey(senderAddress), [[100000000, keyAPI.addrToScriptPubKey(senderAddress)]])
+print("to sender")
+print(txn)

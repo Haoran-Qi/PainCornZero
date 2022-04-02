@@ -32,6 +32,14 @@ def addrToScriptPubKey(b58str):
     # 76  A9  14 (20 bytes)               88 AC
     return '76a914' + utils.base58CheckDecode(b58str) + '88ac'
 
+# convert script hex back to address(only suport p2pkh)
+def scriptPubKeyToAddress(scriptPubKey):
+    return utils.base58CheckEncode("0x00", scriptPubKey[6:-4])
+
+def transactionHexToHash(txn):
+    txnBytes = bytes.fromhex(txn)
+    hashBytes = hashlib.sha256(txnBytes).digest()
+    return binascii.hexlify(hashBytes).decode('ascii')
 
 #--------------------------------------------------------------------
 # Example
