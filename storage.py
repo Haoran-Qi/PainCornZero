@@ -5,9 +5,9 @@ import transactionAPI
 
 class Storage:
     """
-    Transaction
+    Transaction    # NOT used
     {
-        index: 1,                       # transaction id, added after mining
+        txnId: "abca12314acafea",                       # transaction id, content hash
         input: [
             {
                 from: sender address,
@@ -210,7 +210,14 @@ class Storage:
         newTransactionMap = json.loads(json.dumps(self.transactionMap))
         if not self.applyBlockToState(block, self.blocks, newStates, newTransactionMap):
             return False
+        # fillter out all mined transactions from waiting transactions pool
+        newWaitingTransactions = []
+        for waitingTxn in self.waitingTransactions:
+            waitingTxnHash = keyAPI.transactionHexToHash(waitingTxn)
+            if waitingTxnHash not in newTransactionMap:
+                newWaitingTransactions.append(waitingTxn)
         # update real states and blocks
+        self.waitingTransactions = newWaitingTransactions
         self.states = newStates
         self.transactionMap = newTransactionMap
         self.blocks.append(block)
