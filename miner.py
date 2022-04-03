@@ -1,4 +1,5 @@
 import json
+import requests
 
 example = {
     'header': {
@@ -28,7 +29,10 @@ nonce = json.loads(abc)['header']['nonce']
 # print(nonce)
 
 
+# Get request
+def getPendingTxn(self):
+    url = "localhost:3000/getPendingTxn"
+    resp = requests.get(url)
+    data = resp.json()
 
-for i in range(0, max):
-    extract(obj)
 
