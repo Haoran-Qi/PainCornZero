@@ -110,8 +110,8 @@ class Storage:
         for j in range(len(block["body"]["transactions"])):
             txn = block["body"]["transactions"][j]
             txnHash = keyAPI.transactionHexToHash(txn)
+            newTransactionMap[txnHash] = txn
             txnJson = transactionAPI.parseJson(txn)
-            newTransactionMap[txnHash] = txnJson
             publicKey = txnJson["publicKey"]
             transactionAPI.verifyTxnSignature(txn)  # make sure the public key, content, and signature match
 
