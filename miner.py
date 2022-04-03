@@ -30,9 +30,12 @@ nonce = json.loads(abc)['header']['nonce']
 
 
 # Get request
-def getPendingTxn(self):
+def getPendingTxn():
     url = "localhost:3000/getPendingTxn"
     resp = requests.get(url)
     data = resp.json()
+    print(data)
+
+getPendingTxn()
 
 
