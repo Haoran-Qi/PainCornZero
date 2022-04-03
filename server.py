@@ -1,25 +1,25 @@
-from flask import Flask, jsonify, request
-
+from flask import Flask, jsonify, request, Response
 from storage import Storage
+import requests
+
 
 class Server:
 
-    def __init__(self, myAddress, peers, storage):
+    def __init__(self, myAddress, peers):
         self.myAddress = myAddress
         self.peers = peers
-        self.storage = storage
+        self.storage = Storage()
         self.app = Flask(__name__)
-        self.app.add_url_rule('/getPeers', 'getPeers', self.getPeers)
-        self.app.add_url_rule('/join', 'join', self.join)
-        self.app.add_url_rule('/addPeer', 'addPeer', self.addPeer)
-
-
-
+        self.app.add_url_rule('/getPeers', 'getPeers',
+                              self.getPeers, methods=["GET"])
+        self.app.add_url_rule('/addPeer', 'addPeer',
+                              self.addPeer, methods=["POST"])
+        self.app.add_url_rule('/broadcastNewBlock', 'broadcastNewBlock',
+                              self.broadcastNewBlock, methods=["POST"])
 
     def run(self):
         [ip, port] = self.myAddress.split(':')
         self.app.run(host=ip, port=port)
-
 
     """
     Controllers
@@ -27,46 +27,43 @@ class Server:
 
     def getPeers(self):
         return jsonify(self.peers)
-    
+
     def addPeer(self):
-        if request.method != 'POST':
-            return False
         newAddress = request.get_json()['newAddress']
+        print(newAddress)
         for peerAddress in self.peers:
             if peerAddress == newAddress:
-                return False
+                return Response("peer already exists", status=400, mimetype='application/json')
         self.peers.append(newAddress)
+        return Response("peer successfully added", status=201, mimetype='application/json')
 
-    def join(self):
-        self.addPeer()
-
-    def receiveNewBlock(self, newBlock):
-        # verify new block
-        # update pending pool
-        # append blocks array
-        pass
-
-    def broadcastNewBlock(self, newBlock):
-        # receiveNewBlock
+    def broadcastNewBlock(self):
+        newBlock = request.get_json()['newBlock']
+        if not self.storage.receiveNewBlock(newBlock):
+            return Response("Invalid block", status=400)
         # broadcastNewBlock to peers
-        pass
-    
+        for peerUrl in self.peers:
+            try:
+                requests.post(peerUrl, data=newBlock)
+            except:
+                print("peer not reachable " + peerUrl)
+        return Response("peer successfully added", status=201, mimetype='application/json')
+
     def getBalance(self, address):
         pass
 
     # def getBlocks(self):
 
 
-
 if __name__ == '__main__':
-    # myServer = Server("127.0.0.1:3000",["127.0.0.1:3001", "127.0.0.1:3002"], None)
-    # myServer.run()
-    myStorage =  Storage()
-    print("states")
-    print(myStorage.states)
-    print("blocks")
-    print(myStorage.blocks)
-    print("transactionMap")
-    print(myStorage.transactionMap)
-    print("my utxos")
-    print(myStorage.getUtxosForAddress("1MMMMSUb1piy2ufrSguNUdFmAcvqrQF8M5"))
+    myServer = Server("127.0.0.1:3000", ["127.0.0.1:3001", "127.0.0.1:3002"])
+    myServer.run()
+    # myStorage =  Storage()
+    # print("states")
+    # print(myStorage.states)
+    # print("blocks")
+    # print(myStorage.blocks)
+    # print("transactionMap")
+    # print(myStorage.transactionMap)
+    # print("my utxos")
+    # print(myStorage.getUtxosForAddress("1MMMMSUb1piy2ufrSguNUdFmAcvqrQF8M5"))
