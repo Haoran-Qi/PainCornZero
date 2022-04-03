@@ -72,6 +72,11 @@ def txnStringsToRootHashString(txnStrings):
         tempArray = []
     return binascii.hexlify(txnsHashBytes[0]).decode('utf-8')
 
+def compareToTarget(hashString, targetString):
+    if len(hashString) != len(targetString):
+        print("Invalid hashString length while comparing with target")
+        return False
+    return hashString < targetString
 
 #--------------------------------------------------------------------
 # Example

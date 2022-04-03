@@ -1,8 +1,8 @@
 [{
     "header": {
-        "preHeaderHash": "0x12ab321d324",
-        "rootHash": "0x143f2d23c24",
-        "target": "0x000000001",
+        "preHeaderHash": "12ab321d324",
+        "rootHash": "b7757aa893d14997f9a4f50265c7cbd3e55c08f434a29abd5a5fc8e1ee671af9",
+        "target": "60235fe120578f43ae80b4ef95101cd5f52d5d988f41419ced1a23d52682c548",
         "nonce": 777,
         "height": 0,
         "time": 1646089826

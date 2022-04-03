@@ -68,6 +68,7 @@ class Storage:
     }
     """
     def __init__(self, blocks=None):
+        self.target = "60235fe120578f43ae80b4ef95101cd5f52d5d988f41419ced1a23d52682c548"
         self.waitingTransactions = []
         self.states = {}  # utxos
         self.transactionMap = {}  # {hash: stateIndex}
@@ -100,6 +101,7 @@ class Storage:
             preHeaderHash = keyAPI.stringToHashString(preHeader)
         # verify block
         if not self.verifyBlock(block):
+            print("failed to verify block while applyBlockToState "+ str(i))
             return False
         if i>0 and block['preHeaderHash'] != preHeaderHash:
             print("block "+str(i)+ " preHeaderHash mismatch")
@@ -165,8 +167,21 @@ class Storage:
         
     def verifyBlock(self, block):
         # check markle tree
+        txns = block['body']['transactions']
+        calculatedRootHash = keyAPI.txnStringsToRootHashString(txns)
+        if calculatedRootHash != block['header']['rootHash']:
+            print("Markle tree root not match")
+            return False
         # check nonce with current target
-        # check total inputs and total outputs  
+        target = block['header']['target']
+        if self.target != target:
+            print("wrong target value")
+            return False
+        blockHashString = keyAPI.stringToHashString(json.dumps(block))
+        if not keyAPI.compareToTarget(blockHashString, target):
+            print(blockHashString, target)
+            print("hash value not less then target")
+            return False
         return True
 
     def getFullBlocks(self):
