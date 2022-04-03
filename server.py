@@ -17,6 +17,8 @@ class Server:
                               self.getPendingTxn, methods=["GET"])
         self.app.add_url_rule('/getLatestBlock', 'getLatestBlock',
                               self.getLatestBlock, methods=["GET"])
+        self.app.add_url_rule('/getTransactions', 'getTransactions',
+                              self.getTransactions, methods=["GET"])
         self.app.add_url_rule('/addPeer', 'addPeer',
                               self.addPeer, methods=["POST"])
         self.app.add_url_rule('/broadcastNewBlock', 'broadcastNewBlock',
@@ -73,6 +75,8 @@ class Server:
         latestBlock = blocks[len(blocks) - 1]
         return Response(json.dumps(latestBlock), status=200, mimetype='application/json')
         
+    def getTransactions(self):
+         return Response(json.dumps(self.storage.transactionMap), status=200, mimetype='application/json')
 
 
 if __name__ == '__main__':
