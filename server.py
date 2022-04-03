@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request, Response
 from storage import Storage
 import requests
+import json
 
 
 class Server:
@@ -12,6 +13,8 @@ class Server:
         self.app = Flask(__name__)
         self.app.add_url_rule('/getPeers', 'getPeers',
                               self.getPeers, methods=["GET"])
+        self.app.add_url_rule('/getPendingTxn', 'getPendingTxn',
+                              self.getPendingTxn, methods=["GET"])
         self.app.add_url_rule('/addPeer', 'addPeer',
                               self.addPeer, methods=["POST"])
         self.app.add_url_rule('/broadcastNewBlock', 'broadcastNewBlock',
@@ -51,6 +54,9 @@ class Server:
 
     def getBalance(self, address):
         pass
+
+    def getPendingTxn(self):
+        return Response(json.dumps(self.storage.waitingTransactions), status=200, mimetype='application/json')
 
     # def getBlocks(self):
 
