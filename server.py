@@ -15,6 +15,8 @@ class Server:
                               self.getPeers, methods=["GET"])
         self.app.add_url_rule('/getPendingTxn', 'getPendingTxn',
                               self.getPendingTxn, methods=["GET"])
+        self.app.add_url_rule('/getLatestBlock', 'getLatestBlock',
+                              self.getLatestBlock, methods=["GET"])
         self.app.add_url_rule('/addPeer', 'addPeer',
                               self.addPeer, methods=["POST"])
         self.app.add_url_rule('/broadcastNewBlock', 'broadcastNewBlock',
@@ -49,7 +51,7 @@ class Server:
         # broadcastNewBlock to peers
         for peerUrl in self.peers:
             try:
-                requests.post(peerUrl, data=newBlock)
+                requests.post(peerUrl+"/receiveNewBlock", data=newBlock)
             except:
                 print("peer not reachable " + peerUrl)
         return Response("peer successfully added and broadcasted", status=201, mimetype='application/json')
@@ -66,7 +68,11 @@ class Server:
     def getPendingTxn(self):
         return Response(json.dumps(self.storage.waitingTransactions), status=200, mimetype='application/json')
 
-    # def getBlocks(self):
+    def getLatestBlock(self):
+        blocks = self.storage.blocks
+        latestBlock = blocks[len(blocks) - 1]
+        return Response(json.dumps(latestBlock), status=200, mimetype='application/json')
+        
 
 
 if __name__ == '__main__':
