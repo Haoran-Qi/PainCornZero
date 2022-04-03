@@ -1,5 +1,6 @@
 import json
 import requests
+import transactionAPI
 
 example = {
     'header': {
@@ -28,6 +29,8 @@ abc = json.dumps(example)
 nonce = json.loads(abc)['header']['nonce']
 # print(nonce)
 
+# get txn from the waiting pool whose price is the highest
+# construct this txn into a new block
 
 # Get request
 def getPendingTxn():
@@ -35,7 +38,11 @@ def getPendingTxn():
     resp = requests.get(url)
     data = resp.json()
     print(type(data))
+    for txn in data:
+        txnJson = transactionAPI.parseJson(txn)
+        txnOutput = txnJson['output']
+    
 
-getPendingTxn()
+
 
 
