@@ -185,16 +185,48 @@ class Storage:
         return True
 
     def getFullBlocks(self):
-        return json.dumps(self.blocks)
+        return self.blocks
 
     def getUtxosForAddress(self, address):
         if address not in self.states:
             return []
-        return json.dumps(self.states[address])
+        return self.states[address]
 
 
-    def addWaitingTransaction(self, transaction):
-        self.waitingTransactions.append(transaction)
+    def addWaitingTransaction(self, newTxn):
+        # todo verify that transaction
+        transactionAPI.verifyTxnSignature(newTxn)
+        # check if input spent in comfirmed transaction
+        newTxnJson = transactionAPI.parseJson(newTxn)
+        prevHash = newTxnJson["prevHash"]
+        sourceIdx = int(newTxnJson["sourceIdx"])
+        publicKey = newTxnJson["publicKey"]
+        address = keyAPI.publicKeyToAddr(publicKey)
+        foundUnusedUtxo = False
+        for utxo in self.states[address]:
+            print("=============================")
+            print(utxo['transactionId'])
+            print("prevHash",newTxnJson)
+            print(type(prevHash))
+            print(utxo['vout'], sourceIdx)
+            print("=============================")
+            if utxo['transactionId'] == prevHash and utxo['vout'] == sourceIdx:
+                foundUnusedUtxo = True
+                break
+        if not foundUnusedUtxo:
+            print("not found unused transaction")
+            return False
+        # check if input spent in pending transactions
+        for waitingTxnHash in self.waitingTransactions:
+            waitingTxnJson = transactionAPI.parseJson(waitingTxnHash)
+            waitingPrevHash = waitingTxnJson['prevHash']
+            waitingSourceIdx = int(waitingTxnJson['sourceIdx'])
+            if waitingPrevHash == prevHash and waitingSourceIdx == sourceIdx:
+                print("input already spent in pending transactions pool")
+                return False
+        # append to pending pool 
+        self.waitingTransactions.append(newTxn)
+        return True
 
     def addNewBlock(self, block):
         # verify block
