@@ -17,6 +17,10 @@ class Server:
                               self.getPendingTxn, methods=["GET"])
         self.app.add_url_rule('/getLatestBlock', 'getLatestBlock',
                               self.getLatestBlock, methods=["GET"])
+        self.app.add_url_rule('/getFullBlocks', 'getFullBlocks',
+                              self.getFullBlocks, methods=["GET"])
+        self.app.add_url_rule('/getUtxosForAddress', 'getUtxosForAddress',
+                              self.getUtxosForAddress, methods=["GET"])
         self.app.add_url_rule('/getTransactions', 'getTransactions',
                               self.getTransactions, methods=["GET"])
         self.app.add_url_rule('/addPeer', 'addPeer',
@@ -25,6 +29,8 @@ class Server:
                               self.broadcastNewBlock, methods=["POST"])
         self.app.add_url_rule('/receiveNewBlock', 'receiveNewBlock',
                               self.receiveNewBlock, methods=["POST"])
+        self.app.add_url_rule('/addWaitingTransaction', 'addWaitingTransaction',
+                              self.addWaitingTransaction, methods=["POST"])
 
     def run(self):
         [ip, port] = self.myAddress.split(':')
@@ -64,8 +70,15 @@ class Server:
             return Response("Invalid block", status=400)
         return Response("peer successfully added", status=201, mimetype='application/json')
 
-    def getBalance(self, address):
-        pass
+    def addWaitingTransaction(self):
+        transaction = request.get_json()['transaction']
+        if not self.storage.addWaitingTransaction(transaction):
+            return Response("Invalid block", status=400)
+        return Response("waiting txn successfully added", status=201, mimetype='application/json')
+
+    def getUtxosForAddress(self):
+        address = request.args["address"]
+        return Response(json.dumps(self.storage.getUtxosForAddress(address)), status=200,  mimetype='application/json')
 
     def getPendingTxn(self):
         return Response(json.dumps(self.storage.waitingTransactions), status=200, mimetype='application/json')
@@ -74,6 +87,10 @@ class Server:
         blocks = self.storage.blocks
         latestBlock = blocks[len(blocks) - 1]
         return Response(json.dumps(latestBlock), status=200, mimetype='application/json')
+
+    def getFullBlocks(self):
+        blocks = self.storage.blocks
+        return Response(json.dumps(blocks), status=200, mimetype='application/json')
         
     def getTransactions(self):
          return Response(json.dumps(self.storage.transactionMap), status=200, mimetype='application/json')
