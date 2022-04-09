@@ -54,7 +54,7 @@ class Server:
 
     def broadcastNewBlock(self):
         newBlock = request.get_json()['newBlock']
-        if not self.storage.receiveNewBlock(newBlock):
+        if not self.storage.addNewBlock(newBlock):
             return Response("Invalid block", status=400)
         # broadcastNewBlock to peers
         for peerUrl in self.peers:
@@ -66,7 +66,7 @@ class Server:
 
     def receiveNewBlock(self):
         newBlock = request.get_json()['newBlock']
-        if not self.storage.receiveNewBlock(newBlock):
+        if not self.storage.addNewBlock(newBlock):
             return Response("Invalid block", status=400)
         return Response("peer successfully added", status=201, mimetype='application/json')
 
