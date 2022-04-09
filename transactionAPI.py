@@ -20,8 +20,9 @@ def parseJson(transaction):
         valueInt = int.from_bytes(binascii.unhexlify(value),"little")
         outputs.append([valueInt, address])
         accIdx = accIdx +18+ addressLen
+    prevHash = binascii.hexlify(binascii.unhexlify(parsed[0][10:74])[::-1]).decode('utf-8')
     return{
-        "prevHash": parsed[0][10:74],
+        "prevHash": prevHash,
         "sourceIdx":  parsed[0][74:],
         "signature": parsed[1],
         "publicKey": parsed[2],
