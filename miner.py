@@ -3,6 +3,8 @@ import requests
 import transactionAPI
 import keyAPI
 import time
+from threading import Timer
+
 example = {
     'header': {
         'preHeaderHash': '0x12ab321d324',
@@ -39,6 +41,9 @@ def getPendingTxn():
     resp = requests.get(url)
     data = resp.json()
     selectedTxn = getSelectedTxn(data)
+    if len(selectedTxn) < 1:
+        print("the selected txns are empty")
+        return -1
     resp = requests.get("http://localhost:3000/getLatestBlock")
     latestBlock = resp.json()
     # print(latestBlock)
@@ -46,9 +51,6 @@ def getPendingTxn():
     block = {}
     dic = {}
     dic['preHeaderHash'] = keyAPI.stringToHashString(json.dumps(latestBlockHeader))
-    if len(selectedTxn) < 1:
-        print("the selected txns are empty")
-        return -1
     dic['rootHash'] = keyAPI.txnStringsToRootHashString(selectedTxn)
     dic['target'] = "60235fe120578f43ae80b4ef95101cd5f52d5d988f41419ced1a23d52682c548"
     dic['nonce'] = 0
@@ -68,6 +70,8 @@ def getPendingTxn():
             # braodcast to boliu with the this block
             url = "http://localhost:3000/broadcastNewBlock"
             requests.post(url, json= {"newBlock": block})
+            print("---------------------------")
+            print("Block is created" + block)
             break
 
 
@@ -76,7 +80,12 @@ def getPendingTxn():
 def getSelectedTxn(data):
     return data[0:3]
 
-getPendingTxn()
+def doMining():
+    getPendingTxn()
+    Timer(30.0, doMining).start()
+
+if __name__ == '__main__':
+    doMining()
     
 
 

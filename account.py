@@ -39,6 +39,7 @@ class Account:
 
     # send money to toAddress
     def sendTransaction(self, toAddress, amount):
+        
         # pick input from unspent outputs
         utxos = self.getUnspentUtxosForAddress()
         utxoSelected = None
@@ -47,6 +48,7 @@ class Account:
                 utxoSelected = utxo
         if not utxoSelected:
             return False
+
         # generate outputs
         change = utxoSelected['value'] - amount
         txn = transactionAPI.makeSignedTransaction(
@@ -55,8 +57,8 @@ class Account:
             utxoSelected['vout'], 
             keyAPI.addrToScriptPubKey(self.address), 
             [[amount, keyAPI.addrToScriptPubKey(toAddress)],[change, keyAPI.addrToScriptPubKey(self.address)]])
-        # send post request to server
 
+        # send post request to server
         newTxnJson = transactionAPI.parseJson(txn)
         prevHash = newTxnJson["prevHash"]
         print("txn", txn)
