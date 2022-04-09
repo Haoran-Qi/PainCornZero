@@ -1,6 +1,7 @@
 import json
 import keyAPI
 import transactionAPI
+import pdb
 
 
 class Storage:
@@ -103,7 +104,7 @@ class Storage:
         if not self.verifyBlock(block):
             print("failed to verify block while applyBlockToState "+ str(i))
             return False
-        if i>0 and block['preHeaderHash'] != preHeaderHash:
+        if i>0 and block['header']['preHeaderHash'] != preHeaderHash:
             print("block "+str(i)+ " preHeaderHash mismatch")
             return False
         # update each transaction

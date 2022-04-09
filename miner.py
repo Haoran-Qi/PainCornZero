@@ -41,7 +41,7 @@ def getPendingTxn():
     selectedTxn = getSelectedTxn(data)
     resp = requests.get("http://localhost:3000/getLatestBlock")
     latestBlock = resp.json()
-    print(latestBlock)
+    # print(latestBlock)
     latestBlockHeader = latestBlock['header']
     block = {}
     dic = {}
@@ -66,6 +66,8 @@ def getPendingTxn():
             continue
         else:
             # braodcast to boliu with the this block
+            url = "http://localhost:3000/broadcastNewBlock"
+            requests.post(url, json= {"newBlock": block})
             break
 
 
