@@ -127,7 +127,7 @@ if __name__ == '__main__':
 
     # parse transaction
     parsed = parseJson(txn)
-    print(parsed)
+    # print(parsed)
     # print(address)
     # print(keyAPI.scriptPubKeyToAddress(keyAPI.addrToScriptPubKey(address)))
 
